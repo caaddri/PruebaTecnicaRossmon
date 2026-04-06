@@ -12,3 +12,5 @@ Dentro del sistema, el usuario podrá:
 - Crear productos
 - Editar productos
 - Eliminar productos
+
+- Nota: ProductosBD es la base de datos es un .bak
