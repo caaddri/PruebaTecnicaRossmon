@@ -1,155 +1,150 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using PruebaTecnicaRossmon.Data;
-using PruebaTecnicaRossmon.Models;
-using System;
-using System.Collections.Generic;
+using PruebaTecnicaRossmon.DTOs;
+using PruebaTecnicaRossmon.Services;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace PruebaTecnicaRossmon.Controllers
 {
-    [Authorize]
     public class ProductsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ProductService _productService;
 
-        public ProductsController(ApplicationDbContext context)
+        public ProductsController(ProductService productService)
         {
-            _context = context;
+            _productService = productService;
         }
 
-        // GET
+        // GET: Products
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Products.ToListAsync());
+            if (!IsAuthenticated())
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
+
+            var products = await _productService.GetProducts();
+            return View(products);
         }
 
-        // GET Por id
-        public async Task<IActionResult> Details(int? id)
+        // GET: Products/Details/5
+        public async Task<IActionResult> Details(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (!IsAuthenticated())
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
 
-            var product = await _context.Products
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var products = await _productService.GetProducts();
+
+            var product = products.FirstOrDefault(p => p.Id == id);
+
             if (product == null)
-            {
                 return NotFound();
-            }
 
             return View(product);
         }
 
-        // GET: Vista del create
+        // GET: Products/Create
         public IActionResult Create()
         {
+            if (!IsAuthenticated())
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
+
             return View();
         }
 
-        // POST: Crear un nuevo producto
+        // POST: Products/Create
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Price,Stock")] Product product)
+        public async Task<IActionResult> Create(CreateProductDto dto)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+                return View(dto);
+
+            var success = await _productService.CreateProduct(dto);
+
+            if (!success)
             {
-                _context.Add(product);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                ModelState.AddModelError("", "Error al crear producto");
+                return View(dto);
             }
-            return View(product);
+
+            return RedirectToAction("Index");
         }
 
-        // GET: Vista de editar
-        public async Task<IActionResult> Edit(int? id)
+        // GET: Products/Edit/5
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (!IsAuthenticated())
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
 
-            var product = await _context.Products.FindAsync(id);
+            var products = await _productService.GetProducts();
+
+            var product = products.FirstOrDefault(p => p.Id == id);
+
             if (product == null)
-            {
                 return NotFound();
-            }
-            return View(product);
+
+            var dto = new UpdateProductDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                Stock = product.Stock
+            };
+
+            return View(dto);
         }
 
-        // POST: Editar un producto 
+        // POST: Products/Edit
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Price,Stock")] Product product)
+        public async Task<IActionResult> Edit(UpdateProductDto dto)
         {
-            if (id != product.Id)
+            if (!ModelState.IsValid)
+                return View(dto);
+
+            var success = await _productService.UpdateProduct(dto);
+
+            if (!success)
             {
-                return NotFound();
+                ModelState.AddModelError("", "Error al actualizar");
+                return View(dto);
             }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(product);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ProductExists(product.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(product);
+            return RedirectToAction("Index");
         }
 
-        // GET: Vista de delete
-        public async Task<IActionResult> Delete(int? id)
+        // GET: Products/Delete/5
+        public async Task<IActionResult> Delete(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (!IsAuthenticated())
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
 
-            var product = await _context.Products
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var products = await _productService.GetProducts();
+
+            var product = products.FirstOrDefault(p => p.Id == id);
+
             if (product == null)
-            {
                 return NotFound();
-            }
 
             return View(product);
         }
 
-        // POST: Eliminar un producto
+        // POST: Products/Delete/5
         [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var product = await _context.Products.FindAsync(id);
-            if (product != null)
+            var success = await _productService.DeleteProduct(id);
+
+            if (!success)
             {
-                _context.Products.Remove(product);
+                ModelState.AddModelError("", "Error al eliminar");
+                return View();
             }
 
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Index");
         }
 
-        private bool ProductExists(int id)
+        private bool IsAuthenticated()
         {
-            return _context.Products.Any(e => e.Id == id);
+            return !string.IsNullOrEmpty(HttpContext.Session.GetString("JWT"));
         }
     }
 }

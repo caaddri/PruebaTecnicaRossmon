@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using PruebaTecnicaRossmon.Data;
+using PruebaTecnicaRossmon.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,18 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 // MVC
 builder.Services.AddControllersWithViews();
 
+// Conexión al api
+builder.Services.AddHttpClient("Api", client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7146/api/");
+});
+
+// Inyecta el servicio
+builder.Services.AddScoped<ProductService>();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSession();
+
 var app = builder.Build();
 
 // Pipeline
@@ -30,6 +43,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+app.UseSession();
 
 app.UseRouting();
 

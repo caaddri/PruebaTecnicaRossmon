@@ -1,4 +1,5 @@
-﻿@model IEnumerable<PruebaTecnicaRossmon.Models.Product>
+﻿@using PruebaTecnicaRossmon.DTOs
+@model List<GetProductDto>
 
 @{
     ViewData["Title"] = "Productos";
@@ -12,15 +13,9 @@
 <table class="table">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Price)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Stock)
-            </th>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Stock</th>
             <th></th>
         </tr>
     </thead>
